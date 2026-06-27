@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%23FF5D4F'/%3E%3Ccircle cx='70' cy='70' r='22' fill='%23FFC62E'/%3E%3C/svg%3E">
+  <title>かずパッと ｜ かずを かんじる あそび</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg1:#FFF3DD; --bg2:#FFE0BE;
+    --wood:#C68B57; --wood-l:#E5BC8C;
+    --slot:#EAD7BB;
+    --ball-a:#FF5D4F; --ball-a-d:#DC4233;   /* あか */
+    --ball-b:#FFC62E; --ball-b-d:#D38A12;   /* きいろ */
+    --accent:#FFB300; --accent-d:#E59400;
+    --grape:#8E6FCB;
+    --ok:#37B26B; --ok-d:#268A50;
+    --ink:#5A3E2B; --ink-soft:#8a7359;
+    --white:#fff;
+    --shadow:0 8px 0 rgba(120,80,40,.18), 0 14px 26px rgba(120,80,40,.18);
+  }
+  [hidden]{display:none !important;}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0; font-family:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","M PLUS Rounded 1c","Rounded Mplus 1c",system-ui,sans-serif;
+    color:var(--ink);
+    background:radial-gradient(120% 100% at 50% 0%, var(--bg1) 0%, var(--bg2) 100%) fixed;
+    overflow:hidden; user-select:none; -webkit-user-select:none; touch-action:manipulation;
+  }
+  #app{position:fixed; inset:0; display:flex; flex-direction:column;}
+
+  /* top bar */
+  .topbar{display:flex; align-items:center; gap:10px; padding:12px 16px; flex:0 0 auto;}
+  .topbar .spacer{flex:1;}
+  .pill{display:inline-flex; align-items:center; gap:8px; background:var(--white); border:none; border-radius:999px;
+    padding:9px 15px; font-weight:800; font-size:clamp(15px,2.4vw,20px); color:var(--ink); box-shadow:0 4px 0 rgba(120,80,40,.15); cursor:pointer;}
+  .pill:active{transform:translateY(2px); box-shadow:0 2px 0 rgba(120,80,40,.15);}
+  .stars{background:#FFF6E0;}
+  .stars .num{font-variant-numeric:tabular-nums; min-width:1.2em; text-align:center;}
+  .iconbtn{width:clamp(44px,8vw,54px); height:clamp(44px,8vw,54px); padding:0; justify-content:center; font-size:clamp(19px,4vw,25px);}
+
+  /* stage */
+  .stage{flex:1 1 auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:clamp(12px,2.6vh,24px); padding:4px 16px 16px; position:relative; min-height:0;}
+  .prompt{font-weight:900; font-size:clamp(22px,5vw,40px); text-align:center; line-height:1.25;}
+  .prompt small{display:block; font-size:.6em; font-weight:700; color:var(--ink-soft); margin-top:2px;}
+
+  /* trays + balls */
+  .trays{display:flex; gap:clamp(8px,2vw,22px); align-items:center; justify-content:center; flex-wrap:wrap;}
+  .tray{--cell:clamp(38px,9vw,68px); --gap:clamp(6px,1.5vw,11px);
+    background:linear-gradient(180deg,var(--wood-l),var(--wood)); border-radius:20px; padding:calc(var(--gap)*1.4);
+    box-shadow:inset 0 3px 0 rgba(255,255,255,.4), inset 0 -6px 0 rgba(0,0,0,.12), var(--shadow);}
+  .tray.sm{--cell:clamp(24px,5vw,40px); --gap:clamp(4px,1.1vw,8px);}
+  .tray.pick{cursor:pointer; transition:transform .1s;}
+  .tray.pick:active{transform:scale(.97);}
+  .tray.chosen{outline:6px solid var(--ok); outline-offset:4px;}
+  .grid{display:grid; grid-template-columns:repeat(5,var(--cell)); gap:var(--gap);}
+  .cell{width:var(--cell); height:var(--cell); border-radius:50%; background:var(--slot);
+    box-shadow:inset 0 4px 7px rgba(120,80,40,.32), inset 0 -2px 0 rgba(255,255,255,.45);
+    display:flex; align-items:center; justify-content:center;}
+  .ball{width:84%; height:84%; border-radius:50%;
+    background:radial-gradient(circle at 32% 28%, #fff9 0 8%, transparent 42%),
+               radial-gradient(circle at 70% 75%, rgba(0,0,0,.16) 0 30%, transparent 60%), var(--c,var(--ball-a));
+    box-shadow:0 4px 0 var(--cd,var(--ball-a-d)), 0 7px 10px rgba(0,0,0,.18);
+    transform:scale(0); animation:pop .32s cubic-bezier(.22,1.4,.4,1) forwards;}
+  @keyframes pop{to{transform:scale(1);}}
+
+  .plus{font-size:clamp(28px,6vw,46px); font-weight:900; color:var(--ink-soft); align-self:center;}
+
+  /* equation / input display */
+  .eqbox{display:flex; justify-content:center; min-height:0;}
+  .equation{display:inline-flex; align-items:center; gap:clamp(6px,1.6vw,16px);
+    font-weight:900; font-size:clamp(30px,7vw,56px); line-height:1; font-variant-numeric:tabular-nums; color:var(--ink);
+    background:var(--white); padding:clamp(9px,1.8vw,16px) clamp(16px,3.4vw,30px); border-radius:20px; box-shadow:0 6px 0 rgba(120,80,40,.16);}
+  .equation .sign{color:var(--ink-soft);}
+  .equation .lbl{color:var(--ink-soft); font-size:.62em;}
+  .equation .res{color:var(--ink-soft); min-width:.9em; text-align:center;}
+  .equation .res.filled{color:var(--ok);}
+  .equation.ok{box-shadow:0 6px 0 var(--ok-d);}
+  .equation.wrong{animation:shake .4s;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+
+  /* numpad (calculator) */
+  .choices{display:flex; justify-content:center;}
+  .numpad{display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(7px,1.7vw,13px); width:min(330px,80vw);}
+  .key{border:none; border-radius:18px; cursor:pointer; font-family:inherit; font-weight:900;
+    font-size:clamp(24px,5.2vw,38px); color:var(--ink); background:var(--white);
+    padding:clamp(10px,2.2vw,16px) 0; box-shadow:0 6px 0 rgba(120,80,40,.2); transition:transform .07s;}
+  .key:active{transform:translateY(4px); box-shadow:0 2px 0 rgba(120,80,40,.2);}
+  .key.ok{background:var(--ok); color:#fff; box-shadow:0 6px 0 var(--ok-d);}
+  .key.del{background:#FFE7DF; color:var(--ball-a-d);}
+
+  /* home */
+  .home{position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:clamp(14px,3vh,28px); padding:22px; text-align:center; background:radial-gradient(120% 100% at 50% 0%, var(--bg1), var(--bg2));}
+  .logo{font-weight:900; font-size:clamp(40px,9vw,76px); letter-spacing:.04em; line-height:1;}
+  .logo .a{color:var(--ball-a);} .logo .b{color:var(--grape);} .logo .c{color:var(--accent-d);}
+  .tagline{font-weight:700; color:var(--ink-soft); font-size:clamp(15px,2.8vw,20px); margin-top:-6px;}
+  .menu{display:grid; grid-template-columns:repeat(2,1fr); gap:clamp(12px,2.5vw,18px); width:min(560px,92vw);}
+  .modecard{border:none; border-radius:26px; cursor:pointer; color:#fff; padding:clamp(15px,3vw,22px) 14px; font-family:inherit;
+    font-weight:900; font-size:clamp(18px,3.6vw,26px); display:flex; flex-direction:column; align-items:center; gap:8px;
+    box-shadow:0 7px 0 rgba(0,0,0,.16), 0 12px 20px rgba(120,80,40,.18); transition:transform .08s;}
+  .modecard:active{transform:translateY(4px); box-shadow:0 3px 0 rgba(0,0,0,.16);}
+  .modecard .emo{font-size:clamp(32px,7vw,46px); line-height:1;}
+  .modecard small{font-weight:700; font-size:.58em; opacity:.92;}
+  .m1{background:linear-gradient(160deg,#FF8A7A,#FF6F61);}
+  .m2{background:linear-gradient(160deg,#FFD15C,#F0A52A);}
+  .m3{background:linear-gradient(160deg,#7FD6C9,#34B3A3);}
+  .m4{background:linear-gradient(160deg,#A88BDD,#8E6FCB);}
+  .settings{display:flex; gap:14px; flex-wrap:wrap; justify-content:center; align-items:center;}
+  .seg{display:inline-flex; background:var(--white); border-radius:999px; padding:5px; box-shadow:0 4px 0 rgba(120,80,40,.14);}
+  .seg button{border:none; background:transparent; font-family:inherit; font-weight:800; cursor:pointer; padding:9px 16px;
+    border-radius:999px; font-size:clamp(14px,2.4vw,18px); color:var(--ink-soft);}
+  .seg button.on{background:var(--accent); color:#fff;}
+  .seglabel{font-weight:800; color:var(--ink-soft); font-size:clamp(14px,2.4vw,17px);}
+  .mascot{width:clamp(92px,19vw,134px); height:auto; animation:bob 2.6s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-9px) rotate(2deg);}}
+
+  .bottombar{flex:0 0 auto; display:flex; justify-content:center; gap:14px; padding:0 16px 16px;}
+  .bigbtn{border:none; border-radius:999px; cursor:pointer; font-family:inherit; font-weight:900;
+    font-size:clamp(17px,3.2vw,22px); color:#fff; padding:14px 28px; background:linear-gradient(160deg,#FFD15C,var(--accent-d)); box-shadow:0 6px 0 #d68f1f;}
+  .bigbtn:active{transform:translateY(3px); box-shadow:0 3px 0 #d68f1f;}
+
+  /* celebration */
+  .cele{position:fixed; inset:0; pointer-events:none; z-index:30; overflow:hidden;}
+  .conf{position:absolute; top:-30px; font-size:26px; animation:fall linear forwards;}
+  @keyframes fall{to{transform:translateY(110vh) rotate(540deg);}}
+  .bravo{position:fixed; left:50%; top:34%; transform:translate(-50%,-50%) scale(0); z-index:31; font-weight:900;
+    font-size:clamp(40px,11vw,90px); color:var(--ok); text-shadow:0 4px 0 #fff, 0 8px 0 rgba(0,0,0,.12); pointer-events:none;}
+  .bravo.show{animation:bravo 1.1s cubic-bezier(.2,1.5,.4,1);}
+  @keyframes bravo{0%{transform:translate(-50%,-50%) scale(0) rotate(-12deg);}30%{transform:translate(-50%,-50%) scale(1.1) rotate(4deg);}100%{transform:translate(-50%,-50%) scale(1) rotate(0); opacity:0;}}
+
+  @media (prefers-reduced-motion: reduce){*{animation-duration:.01ms !important; transition-duration:.08s !important;}}
+  @media (max-height:540px){.stage{gap:8px;} .home{gap:10px;}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <button class="pill iconbtn" id="homeBtn" aria-label="ホーム">🏠</button>
+    <div class="spacer"></div>
+    <div class="pill stars">⭐ <span class="num" id="starNum">0</span></div>
+    <button class="pill iconbtn" id="soundBtn" aria-label="おと">🔊</button>
+  </div>
+
+  <div class="stage" id="stage" hidden>
+    <div class="prompt" id="prompt"></div>
+    <div class="trays" id="trays"></div>
+    <div class="eqbox" id="eqbox"></div>
+    <div class="choices" id="choices"></div>
+  </div>
+
+  <div class="bottombar" id="bottombar" hidden></div>
+
+  <div class="home" id="home">
+    <svg class="mascot" viewBox="0 0 120 120" aria-hidden="true">
+      <ellipse cx="60" cy="108" rx="30" ry="6" fill="rgba(120,80,40,.15)"/>
+      <circle cx="60" cy="58" r="42" fill="#FF6F61"/>
+      <circle cx="44" cy="52" r="13" fill="#fff"/><circle cx="76" cy="52" r="13" fill="#fff"/>
+      <circle cx="46" cy="54" r="6" fill="#3a2a20"/><circle cx="74" cy="54" r="6" fill="#3a2a20"/>
+      <circle cx="48" cy="52" r="2" fill="#fff"/><circle cx="76" cy="50" r="2" fill="#fff"/>
+      <path d="M50 74 q10 10 20 0" stroke="#a83b30" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <circle cx="34" cy="70" r="6" fill="#ffb3aa"/><circle cx="86" cy="70" r="6" fill="#ffb3aa"/>
+    </svg>
+    <div>
+      <div class="logo"><span class="a">かず</span><span class="b">パッ</span><span class="c">と</span></div>
+      <div class="tagline">かぞえないで、パッと みて かずを かんじよう</div>
+    </div>
+    <div class="menu">
+      <button class="modecard m1" data-mode="count"><span class="emo">👀</span>いくつ かな？<small>みて こたえる</small></button>
+      <button class="modecard m2" data-mode="more"><span class="emo">⚖️</span>どっちが おおい？<small>おおい ほうを えらぶ</small></button>
+      <button class="modecard m3" data-mode="add"><span class="emo">🤝</span>あわせて いくつ？<small>たし算の もと</small></button>
+      <button class="modecard m4" data-mode="sub"><span class="emo">👋</span>のこりは いくつ？<small>ひき算の もと</small></button>
+    </div>
+    <div class="settings">
+      <span class="seglabel">かずの はんい</span>
+      <div class="seg" id="rangeSeg">
+        <button data-range="5">〜5</button>
+        <button data-range="10" class="on">〜10</button>
+        <button data-range="20">〜20</button>
+      </div>
+      <div class="seg" id="levelSeg">
+        <button data-level="ball" class="on">🔴 たま</button>
+        <button data-level="num">🔢 すうしき</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cele" id="cele"></div>
+  <div class="bravo" id="bravo"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = s => document.querySelector(s);
+  const el = (t,c)=>{const e=document.createElement(t); if(c)e.className=c; return e;};
+  const rnd = n => Math.floor(Math.random()*n);
+  const randInt = (lo,hi)=> lo+rnd(hi-lo+1);
+
+  const state = { mode:null, range:10, level:"ball", sound:true, stars:0, answer:null, locked:false, advTimer:null };
+  let advTok = 0;
+
+  /* ---------- sound effects only (no speech) ---------- */
+  let actx=null;
+  function audioInit(){ if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(actx&&actx.state==="suspended")actx.resume(); }
+  function beep(freq,dur,type,vol){
+    if(!state.sound||!actx) return;
+    try{
+      const o=actx.createOscillator(), g=actx.createGain();
+      o.type=type||"sine"; o.frequency.value=freq; g.gain.value=vol||0.16;
+      o.connect(g); g.connect(actx.destination);
+      const t=actx.currentTime; o.start(t);
+      g.gain.setValueAtTime(g.gain.value,t); g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.16)); o.stop(t+(dur||0.16));
+    }catch(e){}
+  }
+  const sTap  =()=>beep(520,0.06,"triangle",0.12);
+  const sPop  =()=>beep(640,0.09,"triangle",0.14);
+  const sRight=()=>{beep(660,0.12,"sine",0.2);setTimeout(()=>beep(880,0.14,"sine",0.2),110);setTimeout(()=>beep(1040,0.18,"sine",0.2),240);};
+  const sWrong=()=>{beep(300,0.16,"sine",0.15);setTimeout(()=>beep(240,0.2,"sine",0.15),120);};
+
+  /* ---------- tray / balls ---------- */
+  function buildTray(n, opts){
+    opts = opts||{};
+    const cap = opts.cap || Math.max(5, Math.ceil((n||1)/5)*5);
+    const tray = el("div","tray"+(opts.pick?" pick":"")+(opts.compact?" sm":""));
+    const grid = el("div","grid");
+    for(let i=0;i<cap;i++){
+      const cell=el("div","cell");
+      if(i<n){
+        const b=el("div","ball");
+        const yellow=(Math.floor(i/5)%2)===1;            // 6-10, 16-20 -> きいろ
+        b.style.setProperty("--c", yellow?"var(--ball-b)":"var(--ball-a)");
+        b.style.setProperty("--cd", yellow?"var(--ball-b-d)":"var(--ball-a-d)");
+        b.style.animationDelay=(i*0.04)+"s";
+        cell.appendChild(b);
+      }
+      grid.appendChild(cell);
+    }
+    tray.appendChild(grid);
+    return tray;
+  }
+  function popSounds(container){ const balls=container.querySelectorAll(".ball"); setTimeout(()=>{ balls.forEach((_,i)=>setTimeout(sPop, i*40)); },80); }
+
+  /* ---------- equation / input display ---------- */
+  function buildEq(a,op,b){
+    const e=el("div","equation");
+    e.innerHTML='<span>'+a+'</span><span class="sign">'+op+'</span><span>'+b+'</span><span class="sign">=</span><span class="res">?</span>';
+    e._res=e.querySelector('.res'); return e;
+  }
+  function buildInput(label){
+    const e=el("div","equation");
+    e.innerHTML='<span class="lbl">'+label+'</span><span class="res">?</span>';
+    e._res=e.querySelector('.res'); return e;
+  }
+  function showEq(eq){ const box=$("#eqbox"); box.innerHTML=""; if(eq) box.appendChild(eq); }
+
+  // ball version of an equation: trayA [op] trayB [=] trayResult (all compact)
+  function showBallEq(a,op,b,res){
+    const trays=$("#trays"); trays.innerHTML="";
+    const sign=s=>{ const d=el("div","plus"); d.textContent=s; trays.appendChild(d); };
+    trays.appendChild(buildTray(a,{compact:true})); sign(op);
+    trays.appendChild(buildTray(b,{compact:true})); sign("=");
+    trays.appendChild(buildTray(res,{compact:true}));
+    popSounds(trays);
+  }
+
+  /* ---------- numpad ---------- */
+  function showNumpad(resEl, answer, onCorrect){
+    const box=$("#choices"); box.innerHTML="";
+    const pad=el("div","numpad");
+    let buf="";
+    const upd=()=>{ resEl.textContent = (buf===""?"?":buf); };
+    ["7","8","9","4","5","6","1","2","3","⌫","0","✓"].forEach(k=>{
+      const b=el("button","key"+(k==="✓"?" ok":"")+(k==="⌫"?" del":""));
+      b.textContent=k;
+      b.onclick=()=>{
+        if(state.locked) return; audioInit();
+        if(k==="⌫"){ buf=buf.slice(0,-1); sTap(); upd(); return; }
+        if(k==="✓"){ submit(); return; }
+        if(buf.length>=2) return;
+        buf=(buf+k).replace(/^0+(?=\d)/,""); sTap(); upd();
+      };
+      pad.appendChild(b);
+    });
+    box.appendChild(pad);
+    function submit(){
+      if(buf===""){ sWrong(); return; }
+      if(parseInt(buf,10)===answer){ onCorrect(); }
+      else{ sWrong(); const eq=resEl.closest(".equation"); if(eq){eq.classList.remove("wrong"); void eq.offsetWidth; eq.classList.add("wrong");} buf=""; upd(); }
+    }
+  }
+
+  /* ---------- celebration / stars ---------- */
+  const PRAISE=["せいかい！","すごい！","やった！","ばっちり！","じょうず！","ピンポン！"];
+  function celebrate(word){
+    const c=$("#cele"); c.innerHTML="";
+    const emos=["⭐","🎉","✨","🌟","🎈","💛","❤️"];
+    for(let i=0;i<24;i++){
+      const s=el("div","conf"); s.textContent=emos[rnd(emos.length)];
+      s.style.left=rnd(100)+"vw"; s.style.fontSize=(18+rnd(20))+"px";
+      s.style.animationDuration=(1.1+Math.random()*1.2)+"s"; s.style.animationDelay=(Math.random()*0.25)+"s";
+      c.appendChild(s);
+    }
+    setTimeout(()=>c.innerHTML="",2600);
+    const b=$("#bravo"); b.textContent=word; b.classList.remove("show"); void b.offsetWidth; b.classList.add("show");
+  }
+  function addStar(){ state.stars++; $("#starNum").textContent=state.stars; }
+
+  /* ---------- flow helpers ---------- */
+  function setBottom(buttons){
+    const bar=$("#bottombar"); bar.innerHTML="";
+    if(!buttons || !buttons.length){ bar.hidden=true; return; }
+    bar.hidden=false;
+    buttons.forEach(b=>{ const btn=el("button","bigbtn"); btn.textContent=b.label; btn.onclick=b.onClick; bar.appendChild(btn); });
+  }
+  function next(fn){
+    const tok=++advTok;
+    setBottom([{label:"つぎへ ➡", onClick:()=>{ if(tok===advTok){advTok++; clearTimeout(state.advTimer); fn();} }}]);
+    state.advTimer=setTimeout(()=>{ if(tok===advTok){advTok++; fn();} }, 2600);
+  }
+
+  /* ====================================================
+     いくつ かな？  (count)
+  ==================================================== */
+  function roundCount(){
+    state.locked=false; setBottom([]);
+    const max=state.range, n=randInt(1,max); state.answer=n;
+    $("#prompt").innerHTML='いくつ あるかな？';
+    const trays=$("#trays"); trays.innerHTML=""; trays.appendChild(buildTray(n,{cap:max})); popSounds(trays);
+    const disp=buildInput("こたえ"); showEq(disp);
+    showNumpad(disp._res, n, ()=>{
+      state.locked=true; disp._res.textContent=n; disp._res.classList.add("filled"); disp.classList.add("ok");
+      $("#choices").innerHTML=""; sRight(); addStar(); celebrate(PRAISE[rnd(PRAISE.length)]); next(roundCount);
+    });
+  }
+
+  /* ====================================================
+     どっちが おおい？  (more)
+  ==================================================== */
+  function roundMore(){
+    state.locked=false; setBottom([]); showEq(null); $("#choices").innerHTML="";
+    const max=state.range; let a=randInt(1,max), b=randInt(1,max); while(a===b) b=randInt(1,max);
+    $("#prompt").innerHTML='どっちが おおい？';
+    const trays=$("#trays"); trays.innerHTML="";
+    const t0=buildTray(a,{cap:max,pick:true}), t1=buildTray(b,{cap:max,pick:true});
+    trays.appendChild(t0); trays.appendChild(t1); popSounds(trays);
+    const big = a>b ? t0 : t1;
+    [t0,t1].forEach(t=>{ t.onclick=()=>{
+      if(state.locked) return;
+      if(t===big){ state.locked=true; t.classList.add("chosen"); sRight(); addStar(); celebrate(PRAISE[rnd(PRAISE.length)]); next(roundMore); }
+      else{ t.classList.add("chosen"); t.style.outlineColor="#ff8a7a"; sWrong(); setTimeout(()=>{ t.classList.remove("chosen"); t.style.outlineColor=""; },1100); }
+    };});
+  }
+
+  /* ====================================================
+     あわせて いくつ？  (add)
+  ==================================================== */
+  function roundAdd(){
+    state.locked=false; setBottom([]);
+    const max=state.range; let a=randInt(1,max-1); let b=randInt(1,max-a); const sum=a+b; state.answer=sum;
+    $("#prompt").innerHTML='あわせて いくつ？';
+    const trays=$("#trays"); trays.innerHTML="";
+    if(state.level==="ball"){
+      trays.appendChild(buildTray(a,{compact:true}));
+      const s=el("div","plus"); s.textContent="+"; trays.appendChild(s);
+      trays.appendChild(buildTray(b,{compact:true}));
+      popSounds(trays);
+    }
+    const eq=buildEq(a,"+",b); showEq(eq);
+    showNumpad(eq._res, sum, ()=>{
+      state.locked=true; eq._res.textContent=sum; eq._res.classList.add("filled"); eq.classList.add("ok");
+      $("#choices").innerHTML=""; sRight(); addStar();
+      showBallEq(a,"+",b,sum);                 // 式の すべての数を 玉で
+      celebrate(PRAISE[rnd(PRAISE.length)]); next(roundAdd);
+    });
+  }
+
+  /* ====================================================
+     のこりは いくつ？  (sub)
+  ==================================================== */
+  function roundSub(){
+    state.locked=false; setBottom([]);
+    const max=state.range; const total=randInt(2,max); const take=randInt(1,total-1); const left=total-take; state.answer=left;
+    $("#prompt").innerHTML='のこりは いくつ？';
+    const trays=$("#trays"); trays.innerHTML="";
+    if(state.level==="ball"){ trays.appendChild(buildTray(total,{compact:true})); popSounds(trays); }
+    const eq=buildEq(total,"−",take); showEq(eq);
+    showNumpad(eq._res, left, ()=>{
+      state.locked=true; eq._res.textContent=left; eq._res.classList.add("filled"); eq.classList.add("ok");
+      $("#choices").innerHTML=""; sRight(); addStar();
+      showBallEq(total,"−",take,left);         // 式の すべての数を 玉で
+      celebrate(PRAISE[rnd(PRAISE.length)]); next(roundSub);
+    });
+  }
+
+  /* ---------- screens / launcher ---------- */
+  function showHome(){
+    advTok++; clearTimeout(state.advTimer);
+    $("#home").hidden=false; $("#stage").hidden=true; setBottom([]);
+  }
+  function startMode(mode){
+    audioInit(); advTok++; state.mode=mode;
+    $("#home").hidden=true; $("#stage").hidden=false;
+    if(mode==="count") roundCount();
+    else if(mode==="more") roundMore();
+    else if(mode==="add") roundAdd();
+    else if(mode==="sub") roundSub();
+  }
+
+  /* ---------- wiring ---------- */
+  document.querySelectorAll(".modecard").forEach(c=> c.addEventListener("click",()=>startMode(c.dataset.mode)));
+  $("#homeBtn").addEventListener("click",showHome);
+  $("#rangeSeg").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return;
+    state.range=+b.dataset.range; $("#rangeSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b)); });
+  $("#levelSeg").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return;
+    state.level=b.dataset.level; $("#levelSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b)); });
+  $("#soundBtn").addEventListener("click",()=>{ state.sound=!state.sound; $("#soundBtn").textContent=state.sound?"🔊":"🔇"; if(state.sound)audioInit(); });
+
+  document.body.addEventListener("pointerdown",audioInit,{once:true});
+})();
+</script>
+</body>
+</html>
