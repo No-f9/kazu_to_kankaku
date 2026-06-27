@@ -136,12 +136,53 @@
 
   @media (prefers-reduced-motion: reduce){*{animation-duration:.01ms !important; transition-duration:.08s !important;}}
   @media (max-height:540px){.stage{gap:8px;} .home{gap:10px;}}
+  /* ---------- habit tracker: calendar ---------- */
+  .screen{position:absolute; inset:0; z-index:24; background:radial-gradient(120% 100% at 50% 0%, var(--bg1), var(--bg2)); overflow:auto;}
+  .screen-inner{max-width:560px; margin:0 auto; padding:14px 16px 30px; display:flex; flex-direction:column; gap:12px;}
+  .cal-top{display:flex; align-items:center; justify-content:space-between;}
+  .cal-title{font-weight:900; font-size:clamp(18px,4vw,24px);}
+  .cal-head{display:flex; align-items:center; justify-content:center; gap:18px;}
+  .cal-ym{font-weight:900; font-size:clamp(20px,4.6vw,28px); min-width:7em; text-align:center;}
+  .navb{border:none; background:var(--white); border-radius:999px; width:46px; height:46px; font-size:20px; font-weight:900; color:var(--ink); cursor:pointer; box-shadow:0 4px 0 rgba(120,80,40,.16);}
+  .navb:active{transform:translateY(2px);}
+  .cal-dows,.cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+  .cal-dow{text-align:center; font-weight:800; color:var(--ink-soft); font-size:clamp(12px,2.6vw,15px); padding:2px 0;}
+  .cal-dow.sun{color:#e0584a;} .cal-dow.sat{color:#3f78c0;}
+  .cal-cell{position:relative; aspect-ratio:1/1; background:var(--white); border-radius:12px; box-shadow:0 3px 0 rgba(120,80,40,.1); display:flex; align-items:center; justify-content:center;}
+  .cal-cell.empty{background:transparent; box-shadow:none;}
+  .cal-cell .dn{position:absolute; top:3px; left:6px; font-size:clamp(11px,2.4vw,14px); font-weight:800; color:var(--ink-soft);}
+  .cal-cell.sun .dn{color:#e0584a;} .cal-cell.sat .dn{color:#3f78c0;}
+  .cal-cell .stamp{font-size:clamp(22px,6.4vw,34px); line-height:1; animation:stamp .45s cubic-bezier(.2,1.5,.4,1);}
+  .cal-cell .dot{color:var(--accent-d); font-size:clamp(9px,2vw,12px);}
+  .cal-cell.today{outline:3px solid var(--accent); outline-offset:-1px;}
+  .cal-cell.future{opacity:.45;}
+  @keyframes stamp{0%{transform:scale(2.2) rotate(-18deg); opacity:0;}60%{transform:scale(.9) rotate(5deg); opacity:1;}100%{transform:scale(1) rotate(0);}}
+  .cal-sum{text-align:center; font-weight:800; color:var(--ink); font-size:clamp(14px,3vw,18px);}
+  .cal-sum b{color:var(--accent-d);}
+  .goalset{display:flex; align-items:center; justify-content:center; gap:10px; font-weight:800; font-size:clamp(14px,3vw,18px); flex-wrap:wrap;}
+  .goalnum{min-width:1.6em; text-align:center; font-size:1.3em; font-weight:900; color:var(--accent-d);}
+  .step{border:none; background:var(--accent); color:#fff; width:42px; height:42px; border-radius:12px; font-size:22px; font-weight:900; cursor:pointer; box-shadow:0 4px 0 var(--accent-d);}
+  .step:active{transform:translateY(2px); box-shadow:0 2px 0 var(--accent-d);}
+  .cal-today{text-align:center; font-weight:800; color:var(--ink-soft);}
+  .cal-today .ok{color:var(--ok);}
+
+  /* ---------- achievement overlay ---------- */
+  .achieve{position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center; padding:24px; background:rgba(90,62,43,.4);}
+  .ach-card{background:var(--white); border-radius:28px; padding:26px 24px; text-align:center; max-width:380px; width:100%; box-shadow:var(--shadow); animation:pop .4s cubic-bezier(.2,1.5,.4,1);}
+  .ach-card .stamp.big{font-size:84px; line-height:1; animation:stamp .55s cubic-bezier(.2,1.5,.4,1);}
+  .ach-title{font-weight:900; font-size:clamp(24px,5.5vw,34px); color:var(--ok); margin-top:6px;}
+  .ach-sub{font-weight:700; color:var(--ink-soft); margin-top:8px; line-height:1.55;}
+  .ach-btns{display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap;}
+  .bigbtn.ghost{background:var(--white); color:var(--ink); box-shadow:0 6px 0 rgba(120,80,40,.18);}
+  .bigbtn.ghost:active{box-shadow:0 3px 0 rgba(120,80,40,.18);}
+
 </style>
 </head>
 <body>
 <div id="app">
   <div class="topbar">
     <button class="pill iconbtn" id="homeBtn" aria-label="ホーム">🏠</button>
+    <button class="pill iconbtn" id="calBtn" aria-label="カレンダー">📅</button>
     <div class="spacer"></div>
     <div class="pill stars">⭐ <span class="num" id="starNum">0</span></div>
     <button class="pill iconbtn" id="soundBtn" aria-label="おと">🔊</button>
@@ -188,7 +229,11 @@
         <button data-level="num">🔢 すうしき</button>
       </div>
     </div>
+    <button class="bigbtn" id="homeCalBtn">📅 がんばりカレンダー</button>
   </div>
+
+  <div class="screen" id="calendar" hidden></div>
+  <div class="achieve" id="achieve" hidden></div>
 
   <div class="cele" id="cele"></div>
   <div class="bravo" id="bravo"></div>
@@ -263,9 +308,10 @@
   function showBallEq(a,op,b,res){
     const trays=$("#trays"); trays.innerHTML="";
     const sign=s=>{ const d=el("div","plus"); d.textContent=s; trays.appendChild(d); };
-    trays.appendChild(buildTray(a,{compact:true})); sign(op);
-    trays.appendChild(buildTray(b,{compact:true})); sign("=");
-    trays.appendChild(buildTray(res,{compact:true}));
+    const cap=state.range;                       // 3つの トレイを 同じ大きさに そろえる
+    trays.appendChild(buildTray(a,{compact:true,cap:cap})); sign(op);
+    trays.appendChild(buildTray(b,{compact:true,cap:cap})); sign("=");
+    trays.appendChild(buildTray(res,{compact:true,cap:cap}));
     popSounds(trays);
   }
 
@@ -297,7 +343,7 @@
 
   /* ---------- celebration / stars ---------- */
   const PRAISE=["せいかい！","すごい！","やった！","ばっちり！","じょうず！","ピンポン！"];
-  function celebrate(word){
+  function confetti(){
     const c=$("#cele"); c.innerHTML="";
     const emos=["⭐","🎉","✨","🌟","🎈","💛","❤️"];
     for(let i=0;i<24;i++){
@@ -307,6 +353,9 @@
       c.appendChild(s);
     }
     setTimeout(()=>c.innerHTML="",2600);
+  }
+  function celebrate(word){
+    confetti();
     const b=$("#bravo"); b.textContent=word; b.classList.remove("show"); void b.offsetWidth; b.classList.add("show");
   }
   function addStar(){ state.stars++; $("#starNum").textContent=state.stars; }
@@ -325,6 +374,93 @@
   }
 
   /* ====================================================
+     ハビットトラッカー（毎日の もくひょう ＋ カレンダー）
+  ==================================================== */
+  const KEY="kazupatto.v1";
+  const store = (function(){ try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.days) return {goal:s.goal||5, days:s.days}; }catch(e){} return {goal:5, days:{}}; })();
+  function saveStore(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
+  function dkey(d){ d=d||new Date(); const m=String(d.getMonth()+1).padStart(2,"0"); const day=String(d.getDate()).padStart(2,"0"); return d.getFullYear()+"-"+m+"-"+day; }
+  function todayRec(){ return store.days[dkey()]||{count:0,done:false}; }
+
+  // 1問 正解するたびに よぶ。きょう はじめて 目標達成したら true
+  function recordCorrect(){
+    const k=dkey(); const d=store.days[k]||{count:0,done:false};
+    d.count++; let newly=false;
+    if(!d.done && d.count>=store.goal){ d.done=true; newly=true; }
+    store.days[k]=d; saveStore();
+    return newly;
+  }
+  // 正解後の しめくくり：達成したら おめでとう、ふだんは つぎへ
+  function finishRound(fn){
+    if(recordCorrect()){ setTimeout(()=>showAchievement(fn), 1000); }
+    else next(fn);
+  }
+
+  function showAchievement(onContinue){
+    const a=$("#achieve"), g=store.goal;
+    a.innerHTML=''
+      +'<div class="ach-card">'
+      +'  <div class="stamp big">💮</div>'
+      +'  <div class="ach-title">たっせい おめでとう！</div>'
+      +'  <div class="ach-sub">きょうの もくひょう <b>'+g+'もん</b> クリア！<br>よく がんばったね 🎉</div>'
+      +'  <div class="ach-btns">'
+      +'    <button class="bigbtn a-cont">つづける ➡</button>'
+      +'    <button class="bigbtn ghost a-cal">📅 カレンダー</button>'
+      +'  </div>'
+      +'</div>';
+    a.hidden=false; confetti();
+    a.querySelector(".a-cont").onclick=()=>{ a.hidden=true; if(onContinue)onContinue(); };
+    a.querySelector(".a-cal").onclick=()=>{ a.hidden=true; openCalendar(()=>{ a.hidden=false; }); };
+  }
+
+  // ----- カレンダー -----
+  let calY=null, calM=null, calOnClose=null;
+  const DOW=["日","月","火","水","木","金","土"];
+  function openCalendar(onClose){
+    calOnClose=onClose||null;
+    if(calY===null){ const t=new Date(); calY=t.getFullYear(); calM=t.getMonth(); }
+    renderCalendar(); $("#calendar").hidden=false;
+  }
+  function closeCalendar(){ $("#calendar").hidden=true; const cb=calOnClose; calOnClose=null; if(cb)cb(); }
+  function monthDone(y,m){ let n=0; const days=new Date(y,m+1,0).getDate(); for(let d=1;d<=days;d++){ const r=store.days[dkey(new Date(y,m,d))]; if(r&&r.done)n++; } return n; }
+  function streak(){ let s=0; const d=new Date(); for(let i=0;i<400;i++){ const r=store.days[dkey(d)]; if(r&&r.done){ s++; } else if(s===0 && dkey(d)===dkey()){ /* きょうは まだでもOK */ } else break; d.setDate(d.getDate()-1); } return s; }
+  function recompTodayDone(){ const r=store.days[dkey()]; if(r && !r.done && r.count>=store.goal) r.done=true; }
+
+  function renderCalendar(){
+    const y=calY, m=calM;
+    const startDow=new Date(y,m,1).getDay();
+    const days=new Date(y,m+1,0).getDate();
+    const tkey=dkey();
+    let cells="";
+    for(let i=0;i<startDow;i++) cells+='<div class="cal-cell empty"></div>';
+    for(let d=1; d<=days; d++){
+      const key=dkey(new Date(y,m,d)); const r=store.days[key]; const done=r&&r.done;
+      const dow=(startDow+d-1)%7; const cls=["cal-cell"];
+      if(dow===0)cls.push("sun"); if(dow===6)cls.push("sat");
+      if(key===tkey)cls.push("today"); if(key>tkey)cls.push("future");
+      const partial = r && r.count>0 && !done;
+      cells+='<div class="'+cls.join(" ")+'"><span class="dn">'+d+'</span>'
+           +(done?'<span class="stamp">💮</span>':(partial?'<span class="dot">●</span>':''))+'</div>';
+    }
+    const doneM=monthDone(y,m), st=streak(), tr=todayRec();
+    $("#calendar").innerHTML=''
+      +'<div class="screen-inner">'
+      +' <div class="cal-top"><button class="navb" id="calClose">⬅</button><div class="cal-title">📅 がんばりカレンダー</div><div style="width:46px"></div></div>'
+      +' <div class="cal-head"><button class="navb" id="calPrev">◀</button><div class="cal-ym">'+y+'ねん '+(m+1)+'がつ</div><button class="navb" id="calNext">▶</button></div>'
+      +' <div class="cal-dows">'+DOW.map((w,i)=>'<div class="cal-dow'+(i===0?" sun":i===6?" sat":"")+'">'+w+'</div>').join("")+'</div>'
+      +' <div class="cal-grid">'+cells+'</div>'
+      +' <div class="cal-sum">このつき <b>'+doneM+'</b>にち たっせい'+(st>1?' ／ <b>'+st+'</b>にち れんぞく🔥':'')+'</div>'
+      +' <div class="goalset">1にち <button class="step" id="gMinus">−</button><span class="goalnum">'+store.goal+'</span>もん で たっせい <button class="step" id="gPlus">＋</button></div>'
+      +' <div class="cal-today">きょう：'+tr.count+' / '+store.goal+' もん'+(tr.done?' <span class="ok">💮 たっせい！</span>':'')+'</div>'
+      +'</div>';
+    $("#calClose").onclick=closeCalendar;
+    $("#calPrev").onclick=()=>{ calM--; if(calM<0){calM=11;calY--;} renderCalendar(); };
+    $("#calNext").onclick=()=>{ calM++; if(calM>11){calM=0;calY++;} renderCalendar(); };
+    $("#gMinus").onclick=()=>{ store.goal=Math.max(1,store.goal-1); recompTodayDone(); saveStore(); renderCalendar(); };
+    $("#gPlus").onclick=()=>{ store.goal=Math.min(30,store.goal+1); saveStore(); renderCalendar(); };
+  }
+
+  /* ====================================================
      いくつ かな？  (count)
   ==================================================== */
   function roundCount(){
@@ -335,7 +471,7 @@
     const disp=buildInput("こたえ"); showEq(disp);
     showNumpad(disp._res, n, ()=>{
       state.locked=true; disp._res.textContent=n; disp._res.classList.add("filled"); disp.classList.add("ok");
-      $("#choices").innerHTML=""; sRight(); addStar(); celebrate(PRAISE[rnd(PRAISE.length)]); next(roundCount);
+      $("#choices").innerHTML=""; sRight(); addStar(); celebrate(PRAISE[rnd(PRAISE.length)]); finishRound(roundCount);
     });
   }
 
@@ -352,7 +488,7 @@
     const big = a>b ? t0 : t1;
     [t0,t1].forEach(t=>{ t.onclick=()=>{
       if(state.locked) return;
-      if(t===big){ state.locked=true; t.classList.add("chosen"); sRight(); addStar(); celebrate(PRAISE[rnd(PRAISE.length)]); next(roundMore); }
+      if(t===big){ state.locked=true; t.classList.add("chosen"); sRight(); addStar(); celebrate(PRAISE[rnd(PRAISE.length)]); finishRound(roundMore); }
       else{ t.classList.add("chosen"); t.style.outlineColor="#ff8a7a"; sWrong(); setTimeout(()=>{ t.classList.remove("chosen"); t.style.outlineColor=""; },1100); }
     };});
   }
@@ -366,9 +502,9 @@
     $("#prompt").innerHTML='あわせて いくつ？';
     const trays=$("#trays"); trays.innerHTML="";
     if(state.level==="ball"){
-      trays.appendChild(buildTray(a,{compact:true}));
+      trays.appendChild(buildTray(a,{compact:true,cap:state.range}));
       const s=el("div","plus"); s.textContent="+"; trays.appendChild(s);
-      trays.appendChild(buildTray(b,{compact:true}));
+      trays.appendChild(buildTray(b,{compact:true,cap:state.range}));
       popSounds(trays);
     }
     const eq=buildEq(a,"+",b); showEq(eq);
@@ -376,7 +512,7 @@
       state.locked=true; eq._res.textContent=sum; eq._res.classList.add("filled"); eq.classList.add("ok");
       $("#choices").innerHTML=""; sRight(); addStar();
       showBallEq(a,"+",b,sum);                 // 式の すべての数を 玉で
-      celebrate(PRAISE[rnd(PRAISE.length)]); next(roundAdd);
+      celebrate(PRAISE[rnd(PRAISE.length)]); finishRound(roundAdd);
     });
   }
 
@@ -388,13 +524,13 @@
     const max=state.range; const total=randInt(2,max); const take=randInt(1,total-1); const left=total-take; state.answer=left;
     $("#prompt").innerHTML='のこりは いくつ？';
     const trays=$("#trays"); trays.innerHTML="";
-    if(state.level==="ball"){ trays.appendChild(buildTray(total,{compact:true})); popSounds(trays); }
+    if(state.level==="ball"){ trays.appendChild(buildTray(total,{compact:true,cap:state.range})); popSounds(trays); }
     const eq=buildEq(total,"−",take); showEq(eq);
     showNumpad(eq._res, left, ()=>{
       state.locked=true; eq._res.textContent=left; eq._res.classList.add("filled"); eq.classList.add("ok");
       $("#choices").innerHTML=""; sRight(); addStar();
       showBallEq(total,"−",take,left);         // 式の すべての数を 玉で
-      celebrate(PRAISE[rnd(PRAISE.length)]); next(roundSub);
+      celebrate(PRAISE[rnd(PRAISE.length)]); finishRound(roundSub);
     });
   }
 
@@ -414,6 +550,8 @@
 
   /* ---------- wiring ---------- */
   document.querySelectorAll(".modecard").forEach(c=> c.addEventListener("click",()=>startMode(c.dataset.mode)));
+  $("#calBtn").addEventListener("click",()=>openCalendar(null));
+  $("#homeCalBtn").addEventListener("click",()=>openCalendar(null));
   $("#homeBtn").addEventListener("click",showHome);
   $("#rangeSeg").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return;
     state.range=+b.dataset.range; $("#rangeSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b)); });
