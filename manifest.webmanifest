@@ -1,0 +1,14 @@
+{
+  "name": "かずパッと",
+  "short_name": "かずパッと",
+  "description": "かぞえないで、パッと見て「かず」を実感する あそび",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FFF3DD",
+  "theme_color": "#FFE0BE",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

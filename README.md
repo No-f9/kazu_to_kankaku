@@ -36,12 +36,14 @@ https://ユーザー名.github.io/リポジトリ名/
 
 ## ファイル
 
-- `index.html` … アプリ本体（これだけで動きます）
+- `index.html` … アプリ本体
+- `icon-180.png` / `icon-192.png` / `icon-512.png` … ホーム画面・タブ用アイコン
+- `manifest.webmanifest` … ホーム画面に追加したときのアプリ情報（Android など）
 
 ## 公開のしかた（ブラウザだけ・コマンド不要）
 
 1. GitHub で新しいリポジトリを **Public** で作成
-2. 「Add file → Upload files」で `index.html` をアップロードして Commit
+2. 「Add file → Upload files」で `index.html` と `manifest.webmanifest`、`icon-180.png` / `icon-192.png` / `icon-512.png` をまとめてアップロードして Commit
 3. リポジトリの **Settings → Pages** を開く
 4. **Source** を「Deploy from a branch」、**Branch** を `main` / `/(root)` にして **Save**
 5. 1分ほど待つと、ページ上部に公開URLが表示されます
